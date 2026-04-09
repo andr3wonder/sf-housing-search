@@ -1,24 +1,56 @@
-import { cacheLife } from "next/cache";
-import { scrapeAll, type Listing, type SearchLink } from "@/lib/scraper";
+import fs from "fs";
+import path from "path";
 
-export default async function Home() {
-  "use cache";
-  cacheLife("days");
+interface Listing {
+  title: string;
+  address: string;
+  price: number | null;
+  pp: number | null;
+  beds: number | null;
+  baths: number | null;
+  sqft: number | null;
+  hood: string;
+  zip: string;
+  transit: number | null;
+  bike: number | null;
+  route: string;
+  url: string;
+  maps: string;
+}
 
-  const { listings, searchUrls, scrapedAt } = await scrapeAll();
+interface SearchLink {
+  site: string;
+  neighborhood: string;
+  url: string;
+}
+
+interface Data {
+  listings: Listing[];
+  searchUrls: SearchLink[];
+  scrapedAt: string;
+  count: number;
+}
+
+function loadData(): Data {
+  const filePath = path.join(process.cwd(), "public", "data.json");
+  if (!fs.existsSync(filePath)) {
+    return { listings: [], searchUrls: [], scrapedAt: new Date().toISOString(), count: 0 };
+  }
+  return JSON.parse(fs.readFileSync(filePath, "utf-8"));
+}
+
+export default function Home() {
+  const { listings, searchUrls, scrapedAt } = loadData();
+
   const date = new Date(scrapedAt);
   const formatted = date.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
+    month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
   });
 
-  const tier1 = listings.filter((l) => l.commuteBike !== null && l.commuteBike <= 12);
-  const tier2 = listings.filter((l) => l.commuteBike !== null && l.commuteBike > 12 && l.commuteBike <= 15);
-  const tier3 = listings.filter((l) => l.commuteBike !== null && l.commuteBike > 15 && l.commuteBike <= 20);
-  const tier4 = listings.filter((l) => l.commuteBike === null || l.commuteBike > 20);
+  const tier1 = listings.filter((l) => l.bike != null && l.bike <= 12);
+  const tier2 = listings.filter((l) => l.bike != null && l.bike > 12 && l.bike <= 15);
+  const tier3 = listings.filter((l) => l.bike != null && l.bike > 15 && l.bike <= 20);
+  const tier4 = listings.filter((l) => l.bike == null || l.bike > 20);
 
   const topPicks = [...tier1, ...tier2].filter((l) => l.price).slice(0, 5);
 
@@ -38,12 +70,15 @@ export default async function Home() {
         <div className="bg-gradient-to-br from-[#1a2a1a] to-[#1a1a2a] border border-green-800 rounded-xl p-5 mb-6">
           <h2 className="text-green-400 font-semibold text-lg mb-3">Top Picks</h2>
           {topPicks.map((l, i) => (
-            <div key={i} className="flex justify-between items-center py-2 border-b border-gray-800 last:border-0 text-sm">
-              <a href={l.url} target="_blank" rel="noopener" className="text-sky-400 hover:underline">
-                {l.title.split(",")[0]}
+            <div key={i} className="flex justify-between items-center py-2 border-b border-gray-800 last:border-0 text-sm gap-2">
+              <a href={l.url} target="_blank" rel="noopener" className="text-sky-400 hover:underline shrink-0">
+                {l.title}
               </a>
-              <span className="text-gray-500 text-xs ml-2 whitespace-nowrap">
-                ${l.price?.toLocaleString()}/mo &middot; {l.bedrooms}BR &middot; {l.commuteBike}m bike &middot; {l.commuteTransit}m transit
+              <span className="text-gray-400 text-xs whitespace-nowrap">
+                {l.hood}
+              </span>
+              <span className="text-gray-500 text-xs ml-auto whitespace-nowrap">
+                ${l.price?.toLocaleString()}/mo &middot; {l.beds}BR &middot; 🚲{l.bike}m &middot; 🚌{l.transit}m
               </span>
             </div>
           ))}
@@ -51,14 +86,14 @@ export default async function Home() {
       )}
 
       <Tier title="Closest — Under 12 min bike" subtitle="SoMa / Mission adjacent / North Beach" items={tier1} color="border-green-500" />
-      <Tier title="Very Close — 15 min bike" subtitle="Nob Hill proper / Mission / Potrero" items={tier2} color="border-sky-400" />
-      <Tier title="Easy Ride — 18-20 min bike" subtitle="Japantown / Duboce Triangle / Haight" items={tier3} color="border-orange-400" />
-      <Tier title="Further Out — 22+ min" subtitle="Outer neighborhoods" items={tier4} color="border-gray-500" />
+      <Tier title="Very Close — 15 min bike" subtitle="Nob Hill / Mission / Potrero" items={tier2} color="border-sky-400" />
+      <Tier title="Easy Ride — 18-20 min bike" subtitle="Japantown / Duboce Triangle / Haight / Castro" items={tier3} color="border-orange-400" />
+      <Tier title="Further Out — 22+ min" subtitle="Glen Park, Bayview, Richmond, etc." items={tier4} color="border-gray-500" />
 
-      <SearchLinks urls={searchUrls} />
+      <SearchLinksSection urls={searchUrls} />
 
       <p className="text-center text-gray-600 text-xs mt-8">
-        Auto-updated daily via Vercel Cron &middot; Commute times are neighborhood estimates — click Commute to verify
+        Auto-updated daily &middot; Scraped locally, deployed to Vercel &middot; Click Commute to verify times on Google Maps
       </p>
     </div>
   );
@@ -81,7 +116,6 @@ function Tier({ title, subtitle, items, color }: { title: string; subtitle: stri
               <th className="text-left py-2 px-2">Beds</th>
               <th className="text-left py-2 px-2">Commute</th>
               <th className="text-left py-2 px-2 hidden md:table-cell">Route</th>
-              <th className="text-left py-2 px-2">Availability</th>
               <th className="text-left py-2 px-2">Links</th>
             </tr>
           </thead>
@@ -90,37 +124,28 @@ function Tier({ title, subtitle, items, color }: { title: string; subtitle: stri
               <tr key={i} className="border-b border-gray-800 hover:bg-[#222]">
                 <td className="py-2 px-2">
                   <a href={l.url} target="_blank" rel="noopener" className="text-sky-400 hover:underline font-medium">
-                    {l.title.split(",")[0]}
+                    {l.title}
                   </a>
-                  <span className="block text-xs text-gray-500">{l.neighborhood}</span>
+                  <span className="block text-xs text-gray-500">{l.hood}</span>
                 </td>
                 <td className="py-2 px-2 font-semibold whitespace-nowrap">
                   ${l.price?.toLocaleString()}
                   <span className="block text-xs text-gray-500 font-normal">
-                    {l.pricePerPerson ? `$${l.pricePerPerson.toLocaleString()}/pp` : ""}
+                    {l.pp ? `$${l.pp.toLocaleString()}/pp` : ""}
                   </span>
                 </td>
                 <td className="py-2 px-2">
-                  {l.bedrooms}BR{l.bathrooms ? `/${l.bathrooms}BA` : ""}
-                  {l.sqft ? <span className="block text-xs text-gray-500">{l.sqft} sqft</span> : null}
+                  {l.beds}BR{l.baths ? `/${l.baths}BA` : ""}
+                  {l.sqft ? <span className="block text-xs text-gray-500">{l.sqft.toLocaleString()} sqft</span> : null}
                 </td>
                 <td className="py-2 px-2 whitespace-nowrap text-sm">
-                  {l.commuteTransit ? <span className="mr-2">🚌 {l.commuteTransit}m</span> : null}
-                  {l.commuteBike ? <span>🚲 {l.commuteBike}m</span> : null}
+                  {l.transit ? <span className="mr-2">🚌 {l.transit}m</span> : null}
+                  {l.bike ? <span>🚲 {l.bike}m</span> : null}
                 </td>
-                <td className="py-2 px-2 text-xs text-gray-400 hidden md:table-cell">{l.transitRoute}</td>
-                <td className="py-2 px-2 text-xs">
-                  {l.availability ? (
-                    <span className={l.availability.includes("Now") || l.availability.includes("New") ? "text-green-400" : "text-yellow-400"}>
-                      {l.availability}
-                    </span>
-                  ) : (
-                    <span className="text-gray-600">—</span>
-                  )}
-                </td>
+                <td className="py-2 px-2 text-xs text-gray-400 hidden md:table-cell">{l.route}</td>
                 <td className="py-2 px-2 text-xs space-x-2">
                   <a href={l.url} target="_blank" rel="noopener" className="text-green-400 hover:underline">Zillow</a>
-                  <a href={l.mapsUrl} target="_blank" rel="noopener" className="text-green-400 hover:underline">Commute</a>
+                  <a href={l.maps} target="_blank" rel="noopener" className="text-green-400 hover:underline">Commute</a>
                 </td>
               </tr>
             ))}
@@ -131,26 +156,22 @@ function Tier({ title, subtitle, items, color }: { title: string; subtitle: stri
   );
 }
 
-function SearchLinks({ urls }: { urls: SearchLink[] }) {
+function SearchLinksSection({ urls }: { urls: SearchLink[] }) {
   const bySite: Record<string, SearchLink[]> = {};
   for (const u of urls) {
     (bySite[u.site] ??= []).push(u);
   }
 
-  // Separate auto-scraped vs manual-browse
-  const scraped = ["Zillow"];
-  const manual = Object.keys(bySite).filter((s) => !scraped.includes(s));
-
   return (
     <div className="bg-[#1a1a1a] rounded-xl p-5 mt-6">
-      <h2 className="text-white font-semibold text-lg mb-3">Browse All Sources</h2>
+      <h2 className="text-white font-semibold text-lg mb-1">Browse All Sources</h2>
       <p className="text-gray-500 text-xs mb-3">
-        Zillow is auto-scraped above. Most other sites block automated scraping, so here are direct links with filters pre-applied — open in your browser.
+        Zillow is auto-scraped above. Other sites block bots — click to browse with filters pre-applied.
       </p>
-      {manual.map((site) => (
+      {Object.entries(bySite).map(([site, links]) => (
         <div key={site} className="text-sm mb-2">
           <strong className="text-gray-300">{site}:</strong>{" "}
-          {bySite[site].map((l, i) => (
+          {links.map((l, i) => (
             <span key={i}>
               {i > 0 && " · "}
               <a href={l.url} target="_blank" rel="noopener" className="text-sky-400 hover:underline">
