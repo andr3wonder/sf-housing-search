@@ -405,18 +405,40 @@ export function generateSearchUrls(): SearchLink[] {
     "Duboce Triangle": "duboce-triangle",
   };
 
+  // Zillow (auto-scraped)
   for (const [hood, slug] of Object.entries(z)) {
     urls.push({ site: "Zillow", neighborhood: hood, url: `https://www.zillow.com/${slug}/rentals/${MIN_BEDS}-${MAX_BEDS}_beds/2.0-_baths/${MIN_PRICE}-${MAX_PRICE}_mp/` });
   }
-  for (const [hood, slug] of Object.entries(a)) {
-    urls.push({ site: "Apartments.com", neighborhood: hood, url: `https://www.apartments.com/${slug}-san-francisco-ca/${MIN_BEDS}-to-${MAX_BEDS}-bedrooms-${MIN_BATHS}-bathrooms/?priceRange=${MIN_PRICE}-${MAX_PRICE}` });
-  }
+  // Craigslist
   for (const hood of ["nob hill", "japantown", "mission district", "duboce triangle"]) {
     const p = new URLSearchParams({ query: hood, min_price: String(MIN_PRICE), max_price: String(MAX_PRICE), min_bedrooms: String(MIN_BEDS), max_bedrooms: String(MAX_BEDS), min_bathrooms: String(MIN_BATHS) });
     urls.push({ site: "Craigslist", neighborhood: hood.replace(/\b\w/g, (c) => c.toUpperCase()), url: `https://sfbay.craigslist.org/search/sfc/apa?${p}` });
   }
+  // Apartments.com
+  for (const [hood, slug] of Object.entries(a)) {
+    urls.push({ site: "Apartments.com", neighborhood: hood, url: `https://www.apartments.com/${slug}-san-francisco-ca/${MIN_BEDS}-to-${MAX_BEDS}-bedrooms-${MIN_BATHS}-bathrooms/?priceRange=${MIN_PRICE}-${MAX_PRICE}` });
+  }
+  // HotPads
   for (const [hood, slug] of Object.entries(a)) {
     urls.push({ site: "HotPads", neighborhood: hood, url: `https://hotpads.com/${slug}-san-francisco-ca/apartments-for-rent?beds=${MIN_BEDS}-${MAX_BEDS}&baths=${MIN_BATHS}&price=${MIN_PRICE}-${MAX_PRICE}` });
+  }
+  // Trulia
+  for (const [hood, slug] of Object.entries({ "Nob Hill": "nob_hill", Japantown: "japantown", "Mission": "mission_dolores", "Duboce Triangle": "duboce_triangle" })) {
+    urls.push({ site: "Trulia", neighborhood: hood, url: `https://www.trulia.com/for_rent/San_Francisco,CA/${slug}/3p_beds/2p_baths/${MIN_PRICE}-${MAX_PRICE}_price/` });
+  }
+  // Facebook Marketplace
+  urls.push({ site: "Facebook Marketplace", neighborhood: "All SF", url: `https://www.facebook.com/marketplace/sanfrancisco/propertyrentals?minPrice=${MIN_PRICE}&maxPrice=${MAX_PRICE}&minBedrooms=${MIN_BEDS}&maxBedrooms=${MAX_BEDS}` });
+  // Facebook Groups (popular SF housing groups)
+  urls.push({ site: "FB Groups", neighborhood: "SF Housing", url: "https://www.facebook.com/groups/sfhousingrentals/" });
+  urls.push({ site: "FB Groups", neighborhood: "Bay Area Rooms", url: "https://www.facebook.com/groups/bayaboroomsforrent/" });
+  urls.push({ site: "FB Groups", neighborhood: "SF Rentals", url: "https://www.facebook.com/groups/SFrentals/" });
+  // RentSFNow
+  urls.push({ site: "RentSFNow", neighborhood: "All SF", url: "https://www.rentsfnow.com/apartments/sf/" });
+  // Redfin
+  urls.push({ site: "Redfin", neighborhood: "All SF", url: "https://www.redfin.com/city/17151/CA/San-Francisco/apartments-for-rent/filter/beds=3-4,baths=2,min-price=4000,max-price=12000" });
+  // Rent.com
+  for (const [hood, slug] of Object.entries(a)) {
+    urls.push({ site: "Rent.com", neighborhood: hood, url: `https://www.rent.com/california/san-francisco-${slug}-apartments/bedrooms-${MIN_BEDS}-${MAX_BEDS}/bathrooms-${MIN_BATHS}` });
   }
   return urls;
 }

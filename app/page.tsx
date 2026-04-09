@@ -127,13 +127,20 @@ function SearchLinks({ urls }: { urls: SearchLink[] }) {
     (bySite[u.site] ??= []).push(u);
   }
 
+  // Separate auto-scraped vs manual-browse
+  const scraped = ["Zillow"];
+  const manual = Object.keys(bySite).filter((s) => !scraped.includes(s));
+
   return (
     <div className="bg-[#1a1a1a] rounded-xl p-5 mt-6">
-      <h2 className="text-white font-semibold text-lg mb-3">Browse More (filters pre-applied)</h2>
-      {Object.entries(bySite).map(([site, links]) => (
+      <h2 className="text-white font-semibold text-lg mb-3">Browse All Sources</h2>
+      <p className="text-gray-500 text-xs mb-3">
+        Zillow is auto-scraped above. Most other sites block automated scraping, so here are direct links with filters pre-applied — open in your browser.
+      </p>
+      {manual.map((site) => (
         <div key={site} className="text-sm mb-2">
           <strong className="text-gray-300">{site}:</strong>{" "}
-          {links.map((l, i) => (
+          {bySite[site].map((l, i) => (
             <span key={i}>
               {i > 0 && " · "}
               <a href={l.url} target="_blank" rel="noopener" className="text-sky-400 hover:underline">
