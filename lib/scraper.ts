@@ -18,6 +18,7 @@ export interface Listing {
   commuteBike: number | null;
   transitRoute: string;
   mapsUrl: string;
+  availability: string;  // "Available Now", "Available 5/1", "Open House 4/12", etc.
 }
 
 export interface SearchLink {
@@ -107,6 +108,8 @@ function enrichListing(l: Listing): Listing {
     l.commuteTransit = commute.transit;
     l.commuteBike = commute.bike;
     l.transitRoute = commute.route;
+    // Fix neighborhood from zip code — more accurate than Zillow's search page assignment
+    l.neighborhood = commute.hood;
   }
   const addr = encodeURIComponent(l.address || l.title);
   const dest = encodeURIComponent("222 2nd St, San Francisco, CA 94105");
@@ -159,6 +162,16 @@ interface ZillowResult {
   area?: number;
   livingArea?: number;
   statusText?: string;
+  // Availability fields
+  availabilityDate?: string;
+  dateAvailable?: string;
+  moveInDate?: string;
+  availableNow?: boolean;
+  openHouse?: string;
+  openHouseSchedule?: unknown[];
+  daysOnZillow?: number;
+  timeOnZillow?: string;
+  listingDateTimeOnZillow?: string;
   [key: string]: unknown;
 }
 
@@ -204,6 +217,37 @@ function zillowResultToListing(data: ZillowResult, hood: string): Listing | null
     detailUrl = `https://www.zillow.com${detailUrl}`;
   }
 
+  // Extract availability info
+  let availability = "";
+  if (data.availableNow) {
+    availability = "Available Now";
+  } else if (data.availabilityDate || data.dateAvailable || data.moveInDate) {
+    const dateStr = (data.availabilityDate || data.dateAvailable || data.moveInDate) as string;
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        availability = `Available ${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+      } else {
+        availability = `Available ${dateStr}`;
+      }
+    } catch {
+      availability = `Available ${dateStr}`;
+    }
+  }
+  if (data.openHouseSchedule && Array.isArray(data.openHouseSchedule) && data.openHouseSchedule.length > 0) {
+    availability += availability ? " · Open House" : "Open House";
+  }
+  // Days on market as fallback signal
+  if (!availability && data.daysOnZillow != null) {
+    availability = data.daysOnZillow === 0 ? "New listing" : `${data.daysOnZillow}d on market`;
+  } else if (!availability && data.timeOnZillow) {
+    availability = data.timeOnZillow as string;
+  }
+  // Listing date fallback
+  if (!availability && data.listingDateTimeOnZillow) {
+    availability = `Listed ${data.listingDateTimeOnZillow}`;
+  }
+
   return enrichListing({
     source: "Zillow",
     title: address || (data.statusText as string) || "Zillow Listing",
@@ -220,6 +264,7 @@ function zillowResultToListing(data: ZillowResult, hood: string): Listing | null
     commuteBike: null,
     transitRoute: "",
     mapsUrl: "",
+    availability,
   });
 }
 
@@ -306,6 +351,7 @@ async function scrapeZillow(): Promise<Listing[]> {
             commuteBike: null,
             transitRoute: "",
             mapsUrl: "",
+            availability: "",
           })
         );
       });
@@ -378,6 +424,7 @@ async function scrapeCraigslist(): Promise<Listing[]> {
             commuteBike: null,
             transitRoute: "",
             mapsUrl: "",
+            availability: "",
           })
         );
       });

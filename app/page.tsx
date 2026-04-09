@@ -81,6 +81,7 @@ function Tier({ title, subtitle, items, color }: { title: string; subtitle: stri
               <th className="text-left py-2 px-2">Beds</th>
               <th className="text-left py-2 px-2">Commute</th>
               <th className="text-left py-2 px-2 hidden md:table-cell">Route</th>
+              <th className="text-left py-2 px-2">Availability</th>
               <th className="text-left py-2 px-2">Links</th>
             </tr>
           </thead>
@@ -108,6 +109,15 @@ function Tier({ title, subtitle, items, color }: { title: string; subtitle: stri
                   {l.commuteBike ? <span>🚲 {l.commuteBike}m</span> : null}
                 </td>
                 <td className="py-2 px-2 text-xs text-gray-400 hidden md:table-cell">{l.transitRoute}</td>
+                <td className="py-2 px-2 text-xs">
+                  {l.availability ? (
+                    <span className={l.availability.includes("Now") || l.availability.includes("New") ? "text-green-400" : "text-yellow-400"}>
+                      {l.availability}
+                    </span>
+                  ) : (
+                    <span className="text-gray-600">—</span>
+                  )}
+                </td>
                 <td className="py-2 px-2 text-xs space-x-2">
                   <a href={l.url} target="_blank" rel="noopener" className="text-green-400 hover:underline">Zillow</a>
                   <a href={l.mapsUrl} target="_blank" rel="noopener" className="text-green-400 hover:underline">Commute</a>
