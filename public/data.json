@@ -1,27 +1,3 @@
-
-🔍 Scraping Craigslist SF...
-  Found 0 results for 'nob hill'
-  Found 0 results for 'japantown'
-  Found 0 results for 'mission district'
-  Found 0 results for 'duboce triangle'
-
-🔍 Scraping Zillow...
-  Found 47 results for 'Nob Hill'
-  Found 47 results for 'Japantown'
-  Found 159 results for 'Mission District'
-  Found 49 results for 'Duboce Triangle'
-
-🔍 Scraping Apartments.com...
-  ⚠️  Apartments.com blocked request for Nob Hill — generating direct link
-  ⚠️  Apartments.com blocked request for Japantown — generating direct link
-  ⚠️  Apartments.com blocked request for Mission District — generating direct link
-  ⚠️  Apartments.com blocked request for Duboce Triangle — generating direct link
-
-🔍 Scraping HotPads...
-  ⚠️  HotPads returned 403 for Nob Hill — generating link
-  ⚠️  HotPads returned 403 for Japantown — generating link
-  ⚠️  HotPads returned 403 for Mission District — generating link
-  ⚠️  HotPads returned 403 for Duboce Triangle — generating link
 {
   "listings": [
     {
@@ -1044,6 +1020,6 @@
       "url": "https://www.trulia.com/for_rent/San_Francisco,CA/duboce_triangle/3p_beds/2p_baths/4000-12000_price/"
     }
   ],
-  "scrapedAt": "2026-04-09T00:02:23.828159",
+  "scrapedAt": "2026-04-09T00:03:18.338775",
   "count": 57
 }
